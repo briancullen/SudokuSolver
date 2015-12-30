@@ -58,9 +58,8 @@ public class SudokuCell implements PropertyChangeListener {
 		
 		possibleValues.removeAll(values);
 		if (isSolved()) {
+			System.out.println("Hmmmm....");
 			textField.setValue(possibleValues.first());
-			textField.setBackground(Color.GREEN);
-			notifyListeners();
 		}
 		updateToolTip();
 	}
@@ -80,6 +79,7 @@ public class SudokuCell implements PropertyChangeListener {
 			
 			// Necessary check as boxes empty at start.
 			if (value != null) {
+				System.out.println("Indeed....");
 				Integer finalValue = Integer.valueOf(((Number)value).intValue());
 
 				if (possibleValues.contains(finalValue)) {

@@ -73,6 +73,29 @@ public class SudokuGrid implements SudokuCellChangeListener {
 	}
 
 	protected void recalculateGrid () {
+		for (SudokuCell currentCell : cells) {
+			if (currentCell.isSolved()) {
+				continue;
+			}
+			
+			Set<Integer> values = currentCell.getPossibleValues();
+			for (Integer value : values) {
+				boolean unique = true;
+				for (SudokuCell cell : cells) {
+					if (cell != currentCell && cell.getPossibleValues().contains(value)) {
+						unique = false;
+						break;
+					}
+				}
+				
+				if (unique) {
+					Set<Integer> poss = (Set<Integer>)(((TreeSet)currentCell.getPossibleValues()).clone());
+					poss.remove(value);
+					currentCell.removePossibleValues(poss);
+				}
+			}
+		}
+		
 		for (int index = 0; index < 3; index ++) {
 			Set<Integer> row = calculateRowValues(index);
 			Set<Integer> col = calculateColumnValues(index);
@@ -86,11 +109,19 @@ public class SudokuGrid implements SudokuCellChangeListener {
 				this.removePossibilitiesFromRow(subindex, row);
 			}
 			
-			rowValuesUsed.remove(index);
+			boolean changed = false;
+			if (!rowValuesUsed.remove(index).containsAll(row)) {
+				changed = true;
+			}
 			rowValuesUsed.add(index, row);
-			colValuesUsed.remove(index);
+			if (!colValuesUsed.remove(index).containsAll(col)) {
+				changed = true;
+			}
 			colValuesUsed.add(index, col);
 			
+			if (changed) {
+				this.notifyGridChangeListeners();
+			}
 		}
 	}
 	
@@ -102,13 +133,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		currentRow.add(cells.get(2 + row*3));
 		
 		Set<Integer> rowValues = calculateValues(currentRow);
-		for (int index = 0; index < 9; index ++) {
-			if (index / 3 == row) {
-				continue;
-			}
-			
-			cells.get(index).removePossibleValues(rowValues);
-		}
 		return rowValues;
 	}
 				
@@ -124,10 +148,33 @@ public class SudokuGrid implements SudokuCellChangeListener {
 			rowSet.addAll(cell.getPossibleValues());
 		}
 		 
-		if (rowSet.containsAll(result) && rowSet.size() == 3) {
+		if (rowSet.size() == 3) {
+			System.out.println("^^^" + rowSet.toString());
 			result.addAll(rowSet);
 		}
 
+		for (Integer value : rowSet) {
+			if (result.contains(value)) {
+				continue;
+			}
+			
+			boolean unique = true;
+			for (SudokuCell cell : cells) {
+				if (cellList.contains(cell)) {
+					continue;
+				}
+				
+				if (cell.getPossibleValues().contains(value)) {
+					unique = false;
+					break;
+				}
+			}
+			
+			if (unique) {
+				result.add(value);
+			}
+		}
+		
 		return result;
 	}
 	
@@ -139,13 +186,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		currentCol.add(cells.get(col + 6));
 		
 		Set<Integer> colValues = calculateValues(currentCol);
-		for (int index = 0; index < 9; index ++) {
-			if (index % 3 == col) {
-				continue;
-			}
-			
-			cells.get(index).removePossibleValues(colValues);
-		}
 		return colValues; 
 	}
 		
@@ -173,7 +213,7 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		for (int index = 0; index < 3; index ++) {
 			SudokuCell cell = cells.get(col + (index*3));
 			cell.removePossibleValues(valuesUsed);
-		}		
+		}
 	}
 
 	public void removePossibilitiesFromRow(int row,
@@ -181,6 +221,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		for (int index = 0; index < 3; index ++) {
 			SudokuCell cell = cells.get(index + (row*3));
 			cell.removePossibleValues(valuesUsed);
-		}		
+		}
 	}
 }

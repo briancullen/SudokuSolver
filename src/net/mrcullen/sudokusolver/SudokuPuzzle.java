@@ -51,6 +51,7 @@ public class SudokuPuzzle implements SudokuGridChangeListener {
 			if (grid != source) {
 				for (int col = 0; col < 3; col ++) {
 					grid.removePossibilitiesFromColumn(col, source.getUsedColumnValues(col));
+					grid.recalculateGrid();
 				}
 			}
 		}
@@ -61,6 +62,7 @@ public class SudokuPuzzle implements SudokuGridChangeListener {
 			if (grid != source) {
 				for (int row = 0; row < 3; row ++) {
 					grid.removePossibilitiesFromRow(row, source.getUsedRowValues(row));
+					grid.recalculateGrid();
 				}
 			}
 		}
