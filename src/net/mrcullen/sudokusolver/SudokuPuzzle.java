@@ -36,42 +36,36 @@ public class SudokuPuzzle implements SudokuGridChangeListener {
 	}
 
 	@Override
-	public void gridColumnChanged(SudokuGrid source, int col,
-			ArrayList<Integer> valuesUsed) {
+	public void gridChanged(SudokuGrid source) {
 		int index = grids.indexOf(source);
 		if (index == -1) {
 			return;
 		}
-		
+
+		int gridRow = index / gridSize;
 		int gridCol = index % gridSize;
 		
+		// Do the columns
 		for (index = 0; index < gridSize; index ++) {
 			SudokuGrid grid = grids.get(gridCol + (index * gridSize));
 			if (grid != source) {
-				grid.removePossibilitiesFromColumn(col, valuesUsed);
+				for (int col = 0; col < 3; col ++) {
+					grid.removePossibilitiesFromColumn(col, source.getUsedColumnValues(col));
+				}
+			}
+		}
+
+		// Do the rows
+		for (index = 0; index < gridSize; index ++) {
+			SudokuGrid grid = grids.get(index + (gridRow * gridSize));
+			if (grid != source) {
+				for (int row = 0; row < 3; row ++) {
+					grid.removePossibilitiesFromRow(row, source.getUsedRowValues(row));
+				}
 			}
 		}
 	}
 
-	@Override
-	public void gridRowChanged(SudokuGrid source, int row,
-			ArrayList<Integer> valuesUsed) {
-		int index = grids.indexOf(source);
-		if (index == -1) {
-			return;
-		}
-		
-		int gridRow = index / gridSize;
-		
-		for (index = 0; index < gridSize; index ++) {
-			SudokuGrid grid = grids.get(index + (gridRow * gridSize));
-			if (grid != source) {
-				grid.removePossibilitiesFromRow(row, valuesUsed);
-			}
-		}
-		
-	}
-	
 	public boolean isSolved () {
 		for (SudokuGrid grid : grids) {
 			if (!grid.isSolved()) {

@@ -2,11 +2,15 @@ package net.mrcullen.sudokusolver;
 
 import java.awt.GridLayout;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.swing.JPanel;
 
 public class SudokuGrid implements SudokuCellChangeListener {
 	private ArrayList<SudokuCell> cells;
+	private ArrayList<Set<Integer>> colValuesUsed;
+	private ArrayList<Set<Integer>> rowValuesUsed;
 	private JPanel gridPanel;
 	
 	private ArrayList<SudokuGridChangeListener> listeners;
@@ -14,15 +18,24 @@ public class SudokuGrid implements SudokuCellChangeListener {
 	public SudokuGrid () {
 		listeners = new ArrayList<SudokuGridChangeListener> ();
 		
+		colValuesUsed = new ArrayList<Set<Integer>> ();
+		rowValuesUsed = new ArrayList<Set<Integer>> ();
+		
+		for (int index = 0; index < 3; index++) {
+			colValuesUsed.add(new TreeSet<Integer>());
+			rowValuesUsed.add(new TreeSet<Integer>());
+		}
+		
 		gridPanel = new JPanel();
 		gridPanel.setLayout(new GridLayout(3, 3, 3, 3));
 		
 		cells = new ArrayList<SudokuCell>();
-		
 		for (int index = 0; index < 9; index++) {
+			
 			SudokuCell cell = new SudokuCell();
 			cell.addCellChangeListener(this);
 			gridPanel.add(cell.getTextField());
+			
 			cells.add(cell);
 		}
 	}
@@ -38,8 +51,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 			return;
 		}
 		
-		int changedRow = index / 3;
-		int changedCol = index % 3;	
 		if (source.isSolved()) {
 			for (SudokuCell cell : cells) {
 				if (cell != source) {
@@ -47,89 +58,97 @@ public class SudokuGrid implements SudokuCellChangeListener {
 				}
 			}
 			
-			notifyColumnListeners(changedCol, calculateColumnValues(changedCol));
-			notifyRowListeners(changedRow, calculateRowValues(changedRow));
+			recalculateGrid();
+			System.out.println(rowValuesUsed.toString());
+			notifyGridChangeListeners();
 		}
 	}
 	
-	protected ArrayList<Integer> calculateRowValues (int row) {
-		ArrayList<Integer> result = new ArrayList<Integer> ();
-		ArrayList<Integer> possibilities = new ArrayList<Integer>();
-		
+	public Set<Integer> getUsedRowValues (int row) {
+		return rowValuesUsed.get(row);
+	}
+
+	public Set<Integer> getUsedColumnValues (int col) {
+		return colValuesUsed.get(col);
+	}
+
+	protected void recalculateGrid () {
 		for (int index = 0; index < 3; index ++) {
-			SudokuCell cell = cells.get(index + (3*row));
-			if(cell.isSolved()){
-				result.addAll(cell.getPossibleValues());
-			}
-			else {
-				possibilities.addAll(cell.getPossibleValues());
-			}
-		}
-		
-		// Tried the catch when we know the number go in the row
-		// but not sure of the order yet.
-		if (possibilities.size() == 2) {
-			Integer possibility1 = possibilities.get(0);
-			Integer possibility2 = possibilities.get(1);
-			for (int index = 0; index < cells.size(); index++) {
-				// Don't check the row we have just done.
-				if (index / 3 == row) {
+			Set<Integer> row = calculateRowValues(index);
+			Set<Integer> col = calculateColumnValues(index);
+			
+			for (int subindex = 0; subindex < 3; subindex++) {
+				if (subindex == index) {
 					continue;
 				}
 				
-				SudokuCell cell = cells.get(index);
-				if (cell.getPossibleValues().contains(possibility1)
-						|| cell.getPossibleValues().contains(possibility2)) {
-					possibilities.clear();
-					break;
-				}
-				
+				this.removePossibilitiesFromColumn(subindex, col);
+				this.removePossibilitiesFromRow(subindex, row);
 			}
-			result.addAll(possibilities);
+			
+			rowValuesUsed.remove(index);
+			rowValuesUsed.add(index, row);
+			colValuesUsed.remove(index);
+			colValuesUsed.add(index, col);
+			
+		}
+	}
+	
+	protected Set<Integer> calculateRowValues (int row) {
+		ArrayList<SudokuCell> currentRow = new ArrayList<SudokuCell>();
+		
+		currentRow.add(cells.get(row*3));
+		currentRow.add(cells.get(1 + row*3));
+		currentRow.add(cells.get(2 + row*3));
+		
+		Set<Integer> rowValues = calculateValues(currentRow);
+		for (int index = 0; index < 9; index ++) {
+			if (index / 3 == row) {
+				continue;
+			}
+			
+			cells.get(index).removePossibleValues(rowValues);
+		}
+		return rowValues;
+	}
+				
+	protected Set<Integer> calculateValues (ArrayList<SudokuCell> cellList) {
+		Set<Integer> result = new TreeSet<Integer> ();
+		Set<Integer> rowSet = new TreeSet<Integer> ();
+		
+		for (SudokuCell cell : cellList) {
+			if (cell.isSolved()) {
+				result.addAll(cell.getPossibleValues());
+			}
+			
+			rowSet.addAll(cell.getPossibleValues());
+		}
+		 
+		if (rowSet.containsAll(result) && rowSet.size() == 3) {
+			result.addAll(rowSet);
 		}
 
 		return result;
 	}
 	
-	protected ArrayList<Integer> calculateColumnValues (int col) {
-		ArrayList<Integer> result = new ArrayList<Integer> ();
-		ArrayList<Integer> possibilities = new ArrayList<Integer>();
+	protected Set<Integer> calculateColumnValues (int col) {
+		ArrayList<SudokuCell> currentCol = new ArrayList<SudokuCell>();
 		
-		for (int index = 0; index < 3; index ++) {
-			SudokuCell cell = cells.get(col + (index*3));
-			if(cell.isSolved()){
-				result.addAll(cell.getPossibleValues());
-			}
-			else {
-				possibilities.addAll(cell.getPossibleValues());
-			}
-		}
+		currentCol.add(cells.get(col));
+		currentCol.add(cells.get(col + 3));
+		currentCol.add(cells.get(col + 6));
 		
-		// Tried the catch when we know the number go in the row
-		// but not sure of the order yet.
-		if (possibilities.size() == 2) {
-			Integer possibility1 = possibilities.get(0);
-			Integer possibility2 = possibilities.get(1);
-			for (int index = 0; index < cells.size(); index++) {
-				// Don't check the col we have just done.
-				if (index % 3 == col) {
-					continue;
-				}
-				
-				SudokuCell cell = cells.get(index);
-				if (cell.getPossibleValues().contains(possibility1)
-						|| cell.getPossibleValues().contains(possibility2)) {
-					possibilities.clear();
-					break;
-				}
-				
+		Set<Integer> colValues = calculateValues(currentCol);
+		for (int index = 0; index < 9; index ++) {
+			if (index % 3 == col) {
+				continue;
 			}
-			result.addAll(possibilities);
+			
+			cells.get(index).removePossibleValues(colValues);
 		}
-
-		return result;
+		return colValues; 
 	}
-	
+		
 	public boolean isSolved () {
 		for (SudokuCell cell : cells) {
 			if (!cell.isSolved()) {
@@ -143,20 +162,14 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		listeners.add(target);
 	}
 	
-	public void notifyColumnListeners (int col, ArrayList<Integer> valuesUsed) {
+	public void notifyGridChangeListeners () {
 		for (SudokuGridChangeListener target : listeners) {
-			target.gridColumnChanged(this, col, valuesUsed);
+			target.gridChanged(this);
 		}
 	}
 	
-	public void notifyRowListeners (int row, ArrayList<Integer> valuesUsed) {
-		for (SudokuGridChangeListener target : listeners) {
-			target.gridRowChanged(this, row, valuesUsed);
-		}
-	}
-
 	public void removePossibilitiesFromColumn(int col,
-			ArrayList<Integer> valuesUsed) {
+			Set<Integer> valuesUsed) {
 		for (int index = 0; index < 3; index ++) {
 			SudokuCell cell = cells.get(col + (index*3));
 			cell.removePossibleValues(valuesUsed);
@@ -164,7 +177,7 @@ public class SudokuGrid implements SudokuCellChangeListener {
 	}
 
 	public void removePossibilitiesFromRow(int row,
-			ArrayList<Integer> valuesUsed) {
+			Set<Integer> valuesUsed) {
 		for (int index = 0; index < 3; index ++) {
 			SudokuCell cell = cells.get(index + (row*3));
 			cell.removePossibleValues(valuesUsed);

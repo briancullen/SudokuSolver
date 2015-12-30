@@ -5,20 +5,22 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JTextField;
 
 public class SudokuCell implements PropertyChangeListener {
 
-	private ArrayList<Integer> possibleValues;
+	private TreeSet<Integer> possibleValues;
 	private JFormattedTextField textField;
 	private ArrayList<SudokuCellChangeListener> listeners;
 	
 	public SudokuCell () {
 		listeners = new ArrayList<SudokuCellChangeListener>();
 		
-		possibleValues = new ArrayList<Integer>();
+		possibleValues = new TreeSet<Integer>();
 		possibleValues.add(Integer.valueOf(1));
 		possibleValues.add(Integer.valueOf(2));
 		possibleValues.add(Integer.valueOf(3));
@@ -37,7 +39,7 @@ public class SudokuCell implements PropertyChangeListener {
 		
 		textField = new JFormattedTextField(digitFormat);
 		textField.setHorizontalAlignment(JTextField.CENTER);
-		textField.addPropertyChangeListener(this);
+		textField.addPropertyChangeListener("value", this);
 		updateToolTip();
 	}
 	
@@ -45,14 +47,20 @@ public class SudokuCell implements PropertyChangeListener {
 		return textField;
 	}
 	
-	public ArrayList<Integer> getPossibleValues() {
+	public Set<Integer> getPossibleValues() {
 		return possibleValues;
 	}
 	
-	public void removePossibleValues(ArrayList<Integer> values) {
+	public void removePossibleValues(Set<Integer> values) {
+		if (this.isSolved()) {
+			return;
+		}
+		
 		possibleValues.removeAll(values);
 		if (isSolved()) {
-			textField.setValue(possibleValues.get(0));
+			textField.setValue(possibleValues.first());
+			textField.setBackground(Color.GREEN);
+			notifyListeners();
 		}
 		updateToolTip();
 	}
