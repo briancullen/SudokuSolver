@@ -89,7 +89,7 @@ public class SudokuGrid implements SudokuCellChangeListener {
 				}
 				
 				if (unique) {
-					Set<Integer> poss = (Set<Integer>)(((TreeSet)currentCell.getPossibleValues()).clone());
+					Set<Integer> poss = currentCell.getPossibleValues();
 					poss.remove(value);
 					currentCell.removePossibleValues(poss);
 				}

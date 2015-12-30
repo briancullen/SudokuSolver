@@ -48,7 +48,7 @@ public class SudokuCell implements PropertyChangeListener {
 	}
 	
 	public Set<Integer> getPossibleValues() {
-		return possibleValues;
+		return (Set<Integer>)possibleValues.clone();
 	}
 	
 	public void removePossibleValues(Set<Integer> values) {
