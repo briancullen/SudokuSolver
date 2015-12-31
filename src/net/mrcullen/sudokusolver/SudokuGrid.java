@@ -59,7 +59,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 			}
 			
 			recalculateGrid();
-			System.out.println(rowValuesUsed.toString());
 			notifyGridChangeListeners();
 		}
 	}
@@ -149,7 +148,6 @@ public class SudokuGrid implements SudokuCellChangeListener {
 		}
 		 
 		if (rowSet.size() == 3) {
-			System.out.println("^^^" + rowSet.toString());
 			result.addAll(rowSet);
 		}
 
