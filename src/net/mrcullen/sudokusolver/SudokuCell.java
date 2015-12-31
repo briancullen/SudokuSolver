@@ -10,6 +10,7 @@ import java.util.TreeSet;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 
 public class SudokuCell implements PropertyChangeListener {
 
@@ -38,7 +39,7 @@ public class SudokuCell implements PropertyChangeListener {
 		digitFormat.setParseIntegerOnly(true);
 		
 		textField = new JFormattedTextField(digitFormat);
-		textField.setHorizontalAlignment(JTextField.CENTER);
+		textField.setHorizontalAlignment(SwingConstants.CENTER);
 		textField.addPropertyChangeListener("value", this);
 		updateToolTip();
 	}
